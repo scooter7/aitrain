@@ -1,73 +1,122 @@
+import logging
 import streamlit as st
-import openai
-import base64
-from github import Github
+from gpt_index import SimpleDirectoryReader, GPTListIndex, GPTSimpleVectorIndex, LLMPredictor, PromptHelper
+from langchain.chat_models import ChatOpenAI
+import sys
 from datetime import datetime
-import io
-import fitz
+import os
+from github import Github
 
-# Initialize the GitHub and OpenAI API clients
+if "OPENAI_API_KEY" not in st.secrets:
+    st.error("Please set the OPENAI_API_KEY secret on the Streamlit dashboard.")
+    sys.exit(1)
+
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+
+logging.info(f"OPENAI_API_KEY: {openai_api_key}")
+
+# Set up the GitHub API
 g = Github(st.secrets["GITHUB_TOKEN"])
 repo = g.get_repo("scooter7/aitrain")
-openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Set page configuration
-st.set_page_config(page_title="AI-Powered LMS Chat")
-st.title('Welcome to the AI-Powered Learning Management System')
+def construct_index(directory_path):
+    max_input_size = 4096
+    num_outputs = 512
+    max_chunk_overlap = 20
+    chunk_size_limit = 600
 
-# Function to fetch and decode the PDF from GitHub
-def fetch_pdf_content():
-    contents = repo.get_contents("docs/marketing_strategy_plan_methodology.pdf")
-    pdf_data = base64.b64decode(contents.content)
-    return pdf_data
+    prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
 
-# Function to interact with the OpenAI chat model
-def chat_with_gpt3(analysis_text):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": "Analyze the following text:"}, {"role": "user", "content": analysis_text}]
-    )
-    return response.choices[0].message["content"].strip()
+    llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo", max_tokens=num_outputs))
 
-# Function to extract text from the PDF
-def extract_text_from_pdf(pdf_data):
-    try:
-        with fitz.open(stream=pdf_data, filetype="pdf") as doc:
-            text = ""
-            for page in doc:
-                text += page.get_text()
-    except fitz.fitz.EmptyFileError as e:
-        print("The PDF file appears to be empty:", e)
-        return ""
-    return text
+    documents = SimpleDirectoryReader(directory_path).load_data()
 
-# Main execution logic
-pdf_data = fetch_pdf_content()
-intro_text = extract_text_from_pdf(pdf_data)
-if intro_text:
-    st.write(intro_text)
+    index = GPTSimpleVectorIndex(documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper)
+
+    index.directory_path = directory_path
+
+    index.save_to_disk('index.json')
+
+    return index
+
+
+def chatbot(input_text, first_name, email):
+    index = GPTSimpleVectorIndex.load_from_disk('index.json')
+    prompt = f"{first_name} ({email}): {input_text}"
+    response = index.query(prompt, response_mode="compact")
+
+    # Create the content directory if it doesn't already exist
+    content_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "content")
+
+    os.makedirs(content_dir, exist_ok=True)
+
+    # Write the user question and chatbot response to a file in the content directory
+    filename = st.session_state.filename
+    file_path = os.path.join(content_dir, filename)
+    with open(file_path, 'a') as f:
+        f.write(f"{first_name} ({email}): {input_text}\n")
+        f.write(f"Chatbot response: {response.response}\n")
+        
+    # Write the chat file to GitHub
+    with open(file_path, 'rb') as f:
+        contents = f.read()
+        repo.create_file(f"content/{filename}", f"Add chat file {filename}", contents)
+
+    return response.response
+
+
+docs_directory_path = "docs"
+index = construct_index(docs_directory_path)
+
+st.set_page_config(page_title="3-Year Degree Feedback")
+
+# Create a container to hold the chat messages
+chat_container = st.container()
+
+# Initialize last_send_pressed to False in session state
+if "last_send_pressed" not in st.session_state:
+    st.session_state.last_send_pressed = False
+
+# Create a form to enter a message and submit it
+form = st.form(key="my_form", clear_on_submit=True)
+if "first_send" not in st.session_state:
+    st.session_state.first_send = True
+
+if st.session_state.first_send:
+    first_name = form.text_input("Enter your first name:", key="first_name")
+    email = form.text_input("Enter your email address:", key="email")
+    st.session_state.first_send = False
 else:
-    st.error("Unable to display the introduction text. The document may be empty or invalid.")
+    first_name = st.session_state.first_name
+    email = st.session_state.email
 
-# Chat interface
-input_text = st.text_area("Enter your message:")
-send_button = st.button("Send")
-if send_button and input_text:
-    response = chat_with_gpt3(input_text)
-    st.write("Analysis: ", response)
+input_text = form.text_input("Enter your message:")
+form_submit_button = form.form_submit_button(label="Send")
 
-# File uploader for users to upload completed materials
-uploaded_file = st.file_uploader("Upload your completed material here:", type=['pdf', 'docx', 'xlsx'])
-if uploaded_file is not None:
-    file_contents = base64.b64encode(uploaded_file.getvalue()).decode()
-    upload_path = f"content/completed_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{uploaded_file.name}"
-    repo.create_file(upload_path, f"Upload completed material {uploaded_file.name}", file_contents)
+if form_submit_button and input_text:
+    # Set the filename key every time the form is submitted
+    filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.docx")
+    st.session_state.filename = filename
+    
+    response = chatbot(input_text, first_name, email)
 
-# Custom CSS to hide Streamlit's default UI elements
-st.markdown("""
+    # Write the user message and chatbot response to the chat container
+    with chat_container:
+        st.write(f"{first_name}: {input_text}")
+        st.write(f"Chatbot: {response}")
+
+    # Save the first name and email in session state
+    st.session_state.first_name = first_name
+    st.session_state.email = email
+
+# Clear the input field after sending a message
+form.empty()
+
+hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             header {visibility: hidden;}
             </style>
-            """, unsafe_allow_html=True)
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
