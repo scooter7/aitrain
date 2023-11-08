@@ -1,6 +1,5 @@
 import streamlit as st
 import openai
-import fitz
 import os
 from github import Github
 from datetime import datetime
