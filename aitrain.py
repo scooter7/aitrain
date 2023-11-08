@@ -12,7 +12,7 @@ g = Github(st.secrets["GITHUB_TOKEN"])
 repo = g.get_repo("scooter7/aitrain")
 
 # Construct the index from documents in the directory
-def construct_index(directory_path, specific_file):
+def construct_index(directory_path):
     max_input_size = 4096
     num_outputs = 512
     max_chunk_overlap = 20
@@ -21,10 +21,10 @@ def construct_index(directory_path, specific_file):
     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
     llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo", max_tokens=num_outputs))
     
-    # Load specific file first
-    documents = [specific_file] + SimpleDirectoryReader(directory_path).load_data()
+    documents = SimpleDirectoryReader(directory_path).load_data()
+    processed_documents = [{'text': doc} for doc in documents]
     
-    index = GPTSimpleVectorIndex(documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper)
+    index = GPTSimpleVectorIndex(processed_documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper)
     index.directory_path = directory_path
     index.save_to_disk('index.json')
     return index
@@ -40,10 +40,9 @@ def chatbot(input_text, first_name, email):
 st.set_page_config(page_title="AI Training Platform")
 st.header("Welcome to the AI Training Platform")
 
-# Initialize the index with the specific PDF file
+# Initialize the index
 docs_directory_path = "docs"
-specific_pdf = "docs/marketing_strategy_plan_methodology.pdf"
-index = construct_index(docs_directory_path, specific_pdf)
+index = construct_index(docs_directory_path)
 
 # Chat container
 chat_container = st.container()
