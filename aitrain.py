@@ -16,7 +16,8 @@ def construct_index(directory_path):
     max_input_size = 4096
     num_outputs = 512
     max_chunk_overlap = 20
-    chunk_size_limit = 600
+    # Increase the chunk size limit to a value larger than the largest term you expect
+    chunk_size_limit = 1614  # Adjust this number as needed
 
     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
 
