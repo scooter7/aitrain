@@ -39,7 +39,6 @@ exceptiongroup==1.1.1
 fastapi==0.95.0
 ffmpy==0.3.0
 filelock==3.11.0
-fitz
 flake8==6.0.0
 Flask==2.2.3
 fonttools==4.39.3
@@ -120,7 +119,6 @@ PyGithub==1.58.1
 Pygments==2.15.1
 PyJWT==2.6.0
 Pympler==1.0.1
-PyMuPDF
 PyNaCl==1.5.0
 pyparsing==3.0.9
 PyPDF2==3.0.1
