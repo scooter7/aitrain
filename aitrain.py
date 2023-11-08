@@ -14,28 +14,22 @@ openai.api_key = st.secrets["OPENAI_API_KEY"]
 st.set_page_config(page_title="AI-Powered LMS Chat")
 st.title('Welcome to the AI-Powered Learning Management System')
 
-# Function to analyze text with GPT-3
-def analyze_with_gpt3(text):
-    response = openai.Completion.create(
-        engine="text-davinci-003",  # Update to the latest engine version
-        prompt=f"Please analyze the following text and identify who would likely find it compelling:\n\n{text}",
-        max_tokens=100
-    )
-    return response.choices[0].text.strip()
+# Function to analyze text with GPT-3.5-turbo
+def analyze_with_gpt(text):
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=[{"role": "system", "content": "Analyze the following text:"}, {"role": "user", "content": text}])
+    return response.choices[0].message["content"].strip()
 
 # Chatbot function
 def chatbot(input_text):
-    analysis = analyze_with_gpt3(input_text)
+    analysis = analyze_with_gpt(input_text)
     filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
     file_path = f"content/{filename}"
     repo.create_file(file_path, f"Add chat log {filename}", f"Analysis: {analysis}")
     return analysis
 
-# User input form
+# User input and processing
 input_text = st.text_area("Enter your message:")
 send_button = st.button("Send")
-
-# Process user input
 if send_button and input_text:
     response = chatbot(input_text)
     st.write("Analysis: ", response)
@@ -43,9 +37,9 @@ if send_button and input_text:
 # Upload completed files
 uploaded_file = st.file_uploader("Upload your completed material here:", type=['pdf', 'docx', 'xlsx'])
 if uploaded_file is not None:
-    file_contents = uploaded_file.read()
+    file_contents = base64.b64encode(uploaded_file.getvalue()).decode()
     upload_path = f"content/completed_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{uploaded_file.name}"
-    repo.create_file(upload_path, f"Upload completed material {uploaded_file.name}", file_contents.decode('utf-8'))
+    repo.create_file(upload_path, f"Upload completed material {uploaded_file.name}", file_contents)
 
 # Hide Streamlit style elements
 st.markdown("""
