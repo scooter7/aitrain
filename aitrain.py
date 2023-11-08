@@ -1,22 +1,21 @@
 import streamlit as st
 from github import Github
-import fitz  # PyMuPDF
-import os
-import sys
+import PyPDF2
+import io
 from gpt_index import SimpleDirectoryReader, GPTListIndex, GPTSimpleVectorIndex, LLMPredictor, PromptHelper
 from langchain.chat_models import ChatOpenAI
 
 # Check for OpenAI API key in Streamlit secrets
 if "OPENAI_API_KEY" not in st.secrets:
     st.error("Please set the OPENAI_API_KEY secret on the Streamlit dashboard.")
-    sys.exit(1)
+    st.stop()
 
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # Check for GitHub token in Streamlit secrets
 if "GITHUB_TOKEN" not in st.secrets:
     st.error("Please set the GITHUB_TOKEN secret on the Streamlit dashboard.")
-    sys.exit(1)
+    st.stop()
 
 github_token = st.secrets["GITHUB_TOKEN"]
 g = Github(github_token)
@@ -26,10 +25,11 @@ repo = g.get_repo("scooter7/aitrain")
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_content):
-    with fitz.open(stream=pdf_content, filetype="pdf") as doc:
-        text = ""
-        for page in doc:
-            text += page.get_text()
+    pdfReader = PyPDF2.PdfFileReader(io.BytesIO(pdf_content))
+    text = ""
+    for pageNum in range(pdfReader.numPages):
+        pageObj = pdfReader.getPage(pageNum)
+        text += pageObj.extractText()
     return text
 
 # Function to construct the index
