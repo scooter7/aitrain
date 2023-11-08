@@ -39,6 +39,7 @@ exceptiongroup==1.1.1
 fastapi==0.95.0
 ffmpy==0.3.0
 filelock==3.11.0
+fitz
 flake8==6.0.0
 Flask==2.2.3
 fonttools==4.39.3
