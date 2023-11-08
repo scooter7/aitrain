@@ -4,6 +4,7 @@ import sys
 from github import Github
 from gpt_index import SimpleDirectoryReader, GPTListIndex, GPTSimpleVectorIndex, LLMPredictor, PromptHelper
 from langchain.chat_models import ChatOpenAI
+import logging
 
 # Check for OpenAI API key in Streamlit secrets
 if "OPENAI_API_KEY" not in st.secrets:
