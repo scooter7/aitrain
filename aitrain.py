@@ -23,24 +23,23 @@ def fetch_pdf_content():
 
 # Function to extract text from the PDF
 def extract_text_from_pdf(pdf_data):
-    with fitz.open("pdf", pdf_data) as doc:
-        text = ""
-        for page in doc:
-            text += page.get_text()
+    try:
+        with fitz.open(stream=pdf_data, filetype="pdf") as doc:
+            text = ""
+            for page in doc:
+                text += page.get_text()
+    except fitz.fitz.EmptyFileError as e:
+        print("The PDF file appears to be empty:", e)
+        return ""
     return text
 
-# Function to interact with the OpenAI chat model
-def chat_with_gpt3(analysis_text):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": "Analyze the following text:"}, {"role": "user", "content": analysis_text}]
-    )
-    return response.choices[0].message["content"].strip()
-
-# Fetch the PDF content, extract the text, and display it
+# Main execution logic
 pdf_data = fetch_pdf_content()
 intro_text = extract_text_from_pdf(pdf_data)
-st.write(intro_text)
+if intro_text:
+    st.write(intro_text)
+else:
+    st.error("Unable to display the introduction text. The document may be empty or invalid.")
 
 # Chat interface
 input_text = st.text_area("Enter your message:")
