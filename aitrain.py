@@ -34,26 +34,34 @@ def extract_text_from_pdf(pdf_content):
 
 # Function to construct the index
 def construct_index():
-    # Get the content of the PDF file from the repo
-    pdf_content = repo.get_contents("docs/marketing_strategy_plan_methodology.pdf").decoded_content
+    try:
+        # Get the content of the PDF file from the repo
+        contents = repo.get_contents("docs/marketing_strategy_plan_methodology.pdf")
+        if contents.encoding == "base64":
+            pdf_content = contents.decoded_content
+        else:
+            raise ValueError("Unsupported encoding for the PDF content")
 
-    # Extract text from the PDF
-    extracted_text = extract_text_from_pdf(pdf_content)
+        # Extract text from the PDF
+        extracted_text = extract_text_from_pdf(pdf_content)
 
-    max_input_size = 4096
-    num_outputs = 512
-    max_chunk_overlap = 20
-    chunk_size_limit = 600
+        max_input_size = 4096
+        num_outputs = 512
+        max_chunk_overlap = 20
+        chunk_size_limit = 600
 
-    prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
-    llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo", max_tokens=num_outputs))
-    
-    # Create a document list with the content of the PDF
-    documents = [extracted_text]
-    
-    index = GPTSimpleVectorIndex(documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper)
-    index.save_to_disk('index.json')
-    return index
+        prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
+        llm_predictor = LLMPredictor(llm=ChatOpenAI(temperature=0.7, model_name="gpt-3.5-turbo", max_tokens=num_outputs))
+        
+        # Create a document list with the content of the PDF
+        documents = [extracted_text]
+        
+        index = GPTSimpleVectorIndex(documents, llm_predictor=llm_predictor, prompt_helper=prompt_helper)
+        index.save_to_disk('index.json')
+        return index
+    except Exception as e:
+        st.error(f"An error occurred while constructing the index: {e}")
+        st.stop()
 
 # Function to handle chat
 def chatbot(input_text):
