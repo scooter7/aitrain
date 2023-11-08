@@ -1,5 +1,5 @@
 streamlit
 PyGithub
-openai==1.1.2
-langchain==0.0.331
+openai
+langchain
 PyMuPDF
