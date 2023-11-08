@@ -29,10 +29,13 @@ def upload_file_to_github(file, filename):
         f.write(file.getbuffer())
     repo.create_file(f"content/{filename}", f"Add file {filename}", file.getbuffer())
 
-# Function to handle chat interactions
 def handle_chat(user_input):
-    response = chat_model.generate_response(user_input)
-    return response
+    response = openai.Completion.create(
+        engine="text-davinci-003",  # or another appropriate engine
+        prompt=user_input,
+        max_tokens=150
+    )
+    return response.choices[0].text.strip()
 
 # Streamlit app
 st.set_page_config(page_title="AI Training Platform")
