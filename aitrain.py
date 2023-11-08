@@ -13,11 +13,11 @@ repo = g.get_repo("scooter7/aitrain")
 
 # Construct the index from documents in the directory
 def construct_index(directory_path):
-    max_input_size = 4096
+    max_input_size = 4096  # This is the token limit for the model
     num_outputs = 512
     max_chunk_overlap = 20
-    # Increase the chunk size limit to a value larger than the largest term you expect
-    chunk_size_limit = 1614  # Adjust this number as needed
+    # Set a safe chunk size limit, considering the token limit of the model
+    chunk_size_limit = 1024  # Adjust this number as needed
 
     prompt_helper = PromptHelper(max_input_size, num_outputs, max_chunk_overlap, chunk_size_limit=chunk_size_limit)
 
