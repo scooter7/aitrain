@@ -21,6 +21,14 @@ def fetch_pdf_content():
     pdf_data = base64.b64decode(contents.content)
     return pdf_data
 
+# Function to interact with the OpenAI chat model
+def chat_with_gpt3(analysis_text):
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": "Analyze the following text:"}, {"role": "user", "content": analysis_text}]
+    )
+    return response.choices[0].message["content"].strip()
+
 # Function to extract text from the PDF
 def extract_text_from_pdf(pdf_data):
     try:
