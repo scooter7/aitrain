@@ -4,3 +4,4 @@ openai
 pypdf
 nltk
 PyGithub
+PyMuPDF
