@@ -1,8 +1,6 @@
-pypdf
 streamlit
-openai
 llama-index
+openai
+pypdf
 nltk
-logging
-os
-Github
+PyGithub
