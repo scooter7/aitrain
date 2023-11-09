@@ -24,7 +24,7 @@ st.title("Learn about Marekting Strategy Planning")
 st.info("This app allows you to ask questions about the Bain Report.", icon="📃")
 
 def get_docs_files():
-    repo = g.get_repo("scooter7/aitrain)
+    repo = g.get_repo("scooter7/aitrain")
     contents = repo.get_contents("docs")
     return contents
 
