@@ -1,88 +1,76 @@
 import streamlit as st
-import fitz  # PyMuPDF
 import os
 from github import Github
 import openai
 from pypdf import PdfReader
 
-# Set up the Streamlit page
-st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto")
 
-# Check for necessary secrets
 if "OPENAI_API_KEY" not in st.secrets or "GITHUB_TOKEN" not in st.secrets:
     st.error("Please set the necessary secrets (OPENAI_API_KEY and GITHUB_TOKEN) on the Streamlit dashboard.")
-    sys.exit(1)
+    st.stop()
 
-# Set up API keys
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 github_token = st.secrets["GITHUB_TOKEN"]
 
-# Set up GitHub client
 g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
-# Function to extract text by stages from the PDF
-def extract_text_by_stages(pdf_path):
-    doc = fitz.open(pdf_path)
-    stages_text = {}
-    current_stage = None
-    current_text = []
+contents = repo.get_contents("docs")
+document_titles = [content.name for content in contents if content.name.endswith(('.docx', '.xlsx'))]
+document_urls = {title: content.download_url for title, content in zip(document_titles, contents) if title.endswith(('.docx', '.xlsx'))}
 
-    for page in doc:
-        text = page.get_text()
-        # Search for stage headings like "Stage 1 - Values"
-        if "Stage" in text and "-" in text:
-            if current_stage:
-                stages_text[current_stage] = "\n".join(current_text)
-            current_stage = text.strip().split("\n")[0]  # Assumes the stage title is at the start of a line
-            current_text = []
-        else:
-            current_text.append(text)
-    
-    if current_stage:  # Don't forget to save the last stage
-        stages_text[current_stage] = "\n".join(current_text)
+st.title("Chat with Bain Report")
+st.info("This app allows you to ask questions about the Bain Report.", icon="📃")
 
-    return stages_text
-
-# Function to save uploaded file
-def save_uploaded_file(uploaded_file):
-    with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    return f.name
-
-# Function to upload file to GitHub
-def upload_to_github(file_path, repo, path_in_repo):
-    with open(file_path, "rb") as f:
-        content = f.read()
-    repo.create_file(path_in_repo, "commit message", content)
-
-# Display stages and handle file uploads
-stages_text = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pdf")
-
-for stage, text in stages_text.items():
-    st.subheader(stage)
-    st.write(text)
-    # Add more logic here to provide links to associated documents
-
-uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
-if uploaded_file is not None:
-    file_path = save_uploaded_file(uploaded_file)
-    upload_to_github(file_path, repo, f"uploads/{uploaded_file.name}")
-
-# Chat interface
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if prompt := st.text_input("Your question"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+@st.experimental_singleton
+def load_data():
+    pdf_path = "docs/marketing_strategy_plan_methodology.pdf"
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"The file {pdf_path} was not found.")
+    
+    reader = PdfReader(pdf_path)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() + "\n"
+    
+    return text
+
+report_text = load_data()
+
+if 'user_input' not in st.session_state:
+    st.session_state['user_input'] = ''
+
+user_input = st.text_input("Your question", key="user_input_key")
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    st.session_state['user_input'] = ''
+
+    with st.spinner("Thinking..."):
+        if any(title.lower() in user_input.lower() for title in document_titles):
+            matching_titles = [title for title in document_titles if title.lower() in user_input.lower()]
+            if matching_titles:
+                matching_title = matching_titles[0]
+                document_url = document_urls[matching_title]
+                response_content = f"I found the document you're looking for: [{matching_title}]({document_url})"
+            else:
+                response_content = "I couldn't find the document you're looking for."
+        else:
+            chat_messages = [{"role": "system", "content": "You are a helpful assistant. Answer the user's questions accurately."}]
+            for message in st.session_state.messages:
+                chat_messages.append({"role": message["role"], "content": message["content"]})
+            
+            completion = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=chat_messages
+            )
+            response_content = completion.choices[0].message['content']
+        
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
+        st.session_state['user_input'] = ''
 
 for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
-
-if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-    response = openai.Completion.create(
-        engine="davinci",
-        prompt=st.session_state.messages[-1]["content"],
-        max_tokens=150
-    )
-    st.session_state.messages.append({"role": "assistant", "content": response.choices[0].text})
