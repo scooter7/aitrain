@@ -4,3 +4,4 @@ openai
 llama-index
 nltk
 logging
+os
