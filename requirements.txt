@@ -5,4 +5,4 @@ llama-index
 nltk
 logging
 os
-PyGithub
+Github
