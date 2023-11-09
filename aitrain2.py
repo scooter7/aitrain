@@ -72,11 +72,6 @@ if "chat_engine" not in st.session_state:
 if prompt := st.chat_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-# Display chat messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
-
 # Generate and display assistant response
 if prompt := st.text_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -96,26 +91,18 @@ if prompt := st.text_input("Your question"):
                 response_content = "I couldn't find the document you're looking for."
         else:
             # Handle other types of queries
-            response = openai.Completion.create(
-                model="gpt-3.5-turbo",
-                prompt=create_prompt(st.session_state.messages, prompt),
-                temperature=0.5,
-                max_tokens=150
+            chat_messages = [{"role": "system", "content": "You are a helpful assistant. Answer the user's questions accurately."}]
+            for message in st.session_state.messages:
+                chat_messages.append({"role": message["role"], "content": message["content"]})
+            
+            completion = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=chat_messages
             )
-            response_content = response.choices[0].text.strip()
+            response_content = completion.choices[0].message['content']
         
         st.session_state.messages.append({"role": "assistant", "content": response_content})
 
 # Display chat messages
 for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
-
-# Helper function to create the prompt for OpenAI
-def create_prompt(messages, user_input):
-    conversation = "You are a helpful assistant. Answer the user's questions accurately.\n"
-    for message in messages:
-        role = message["role"]
-        content = message["content"]
-        conversation += f"{role.title()}: {content}\n"
-    conversation += f"User: {user_input}\n"
-    return conversation
