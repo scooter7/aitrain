@@ -4,6 +4,7 @@ from llama_index.llms import OpenAI
 import openai
 from pypdf import PdfReader
 import nltk
+import logging
 
 # Download necessary NLTK data
 nltk.download('popular')
