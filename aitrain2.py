@@ -39,7 +39,8 @@ def get_docs_files():
 # Function to check if the user's message is a request for a document
 def is_request_for_document(message):
     # Simple check for keywords, can be replaced with more complex NLP
-    return any(keyword in message.lower() for keyword in ["document", "report", "file", "pdf"])
+    keywords = ["document", "report", "file", "pdf", "download", "link"]
+    return any(keyword in message.lower() for keyword in keywords)
 
 # Function to search for documents in the docs folder
 def search_docs(message, files_dict):
@@ -47,6 +48,9 @@ def search_docs(message, files_dict):
     for name, path in files_dict.items():
         if name.lower() in message.lower():
             return path
+    # If no direct match, check if any document-related keyword is in the message
+    if is_request_for_document(message):
+        return list(files_dict.values())[0]  # Return the first document as a fallback
     return None
 
 # Initialize chat messages if not already present in session state
@@ -100,7 +104,7 @@ if st.session_state.messages[-1]["role"] != "assistant":
                     file_url = get_github_file_url(doc_path)
                     response_message = f"Here is the document you requested: [link]({file_url})"
                 else:
-                    response_message = "I couldn't find the document you're looking for."
+                    response_message = "I couldn't find the document you're looking for. Please specify the document name or content you are interested in."
             else:
                 response = st.session_state.chat_engine.chat(user_message)
                 response_message = response.response
