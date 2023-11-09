@@ -5,6 +5,7 @@ import openai
 from pypdf import PdfReader
 import nltk
 import logging
+import os
 
 # Download necessary NLTK data
 nltk.download('popular')
