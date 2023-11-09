@@ -78,36 +78,44 @@ for message in st.session_state.messages:
         st.write(message["content"])
 
 # Generate and display assistant response
-if st.session_state.messages[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            # Define keywords that suggest the user is asking for a document
-            document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
-            
-            # Check if the user's query contains any of the document keywords
-            if any(keyword in prompt.lower() for keyword in document_keywords):
-                # Attempt to find close matches for the document title in the user's query
-                # Lower the cutoff for broader matching
-                closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
-                if closest_matches:
-                    # Find the original title cases from the document titles
-                    matching_titles = [title for title in document_titles if title.lower() in closest_matches]
-                    if matching_titles:
-                        # Provide links to all matching documents
-                        response_content = "Here are the documents that might match your request:\n"
-                        for title in matching_titles:
-                            # Ensure the title is linked to the correct URL
-                            document_url = document_urls[title]
-                            response_content += f"- [{title}]({document_url})\n"
-                    else:
-                        response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
-                else:
-                    response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
+if prompt := st.text_input("Your question"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Generate and display assistant response
+    with st.spinner("Thinking..."):
+        # Check if the user is asking for a document
+        if any(title.lower() in prompt.lower() for title in document_titles):
+            # Find the matching document title
+            matching_titles = [title for title in document_titles if title.lower() in prompt.lower()]
+            if matching_titles:
+                # Provide the link to the matching document
+                matching_title = matching_titles[0]  # Assuming the first match is the desired one
+                document_url = document_urls[matching_title]
+                response_content = f"I found the document you're looking for: [{matching_title}]({document_url})"
             else:
-                # If no document keywords are present, handle the query normally
-                response = st.session_state.chat_engine.chat(prompt)
-                response_content = response.response
-            
-            st.write(response_content)
-            message = {"role": "assistant", "content": response_content}
-            st.session_state.messages.append(message)
+                response_content = "I couldn't find the document you're looking for."
+        else:
+            # Handle other types of queries
+            response = openai.Completion.create(
+                model="gpt-3.5-turbo",
+                prompt=create_prompt(st.session_state.messages, prompt),
+                temperature=0.5,
+                max_tokens=150
+            )
+            response_content = response.choices[0].text.strip()
+        
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
+
+# Display chat messages
+for message in st.session_state.messages:
+    st.write(f"{message['role'].title()}: {message['content']}")
+
+# Helper function to create the prompt for OpenAI
+def create_prompt(messages, user_input):
+    conversation = "You are a helpful assistant. Answer the user's questions accurately.\n"
+    for message in messages:
+        role = message["role"]
+        content = message["content"]
+        conversation += f"{role.title()}: {content}\n"
+    conversation += f"User: {user_input}\n"
+    return conversation
