@@ -11,7 +11,7 @@ from github import Github
 # Download necessary NLTK data
 nltk.download('popular')
 
-st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(page_title="Learn about Marketing Straegy", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
 if "OPENAI_API_KEY" not in st.secrets:
     st.error("Please set the OPENAI_API_KEY secret on the Streamlit dashboard.")
     sys.exit(1)
@@ -20,11 +20,11 @@ openai_api_key = st.secrets["OPENAI_API_KEY"]
 g = Github(st.secrets["GITHUB_TOKEN"])
 
 logging.info(f"OPENAI_API_KEY: {openai_api_key}")
-st.title("Chat with Bain Report")
+st.title("Learn about Marekting Strategy Planning")
 st.info("This app allows you to ask questions about the Bain Report.", icon="📃")
 
 def get_docs_files():
-    repo = g.get_repo("your_github_username/your_repository_name")
+    repo = g.get_repo("scooter7/aitrain)
     contents = repo.get_contents("docs")
     return contents
 
