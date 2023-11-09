@@ -1,8 +1,9 @@
 import streamlit as st
-from github import Github
-from PyPDF2 import PdfReader
-import openai
+import fitz  # PyMuPDF
 import os
+from github import Github
+import openai
+from pypdf import PdfReader
 
 # Download necessary NLTK data
 # nltk.download('popular') # This line should be run separately if needed, not within the app
