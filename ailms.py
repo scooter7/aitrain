@@ -60,6 +60,10 @@ if prompt := st.text_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     # Generate and display assistant response
+if prompt := st.text_input("Your question"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    # Generate and display assistant response
     with st.spinner("Thinking..."):
         # Check if the user is asking for a document
         if any(title.lower() in prompt.lower() for title in document_titles):
@@ -74,13 +78,15 @@ if prompt := st.text_input("Your question"):
                 response_content = "I couldn't find the document you're looking for."
         else:
             # Handle other types of queries
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "system", "content": "You are a helpful assistant."},
-                          *st.session_state.messages,
-                          {"role": "user", "content": prompt}]
+            chat_messages = [{"role": "system", "content": "You are a helpful assistant. Answer the user's questions accurately."}]
+            for message in st.session_state.messages:
+                chat_messages.append({"role": message["role"], "content": message["content"]})
+            
+            completion = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=chat_messages
             )
-            response_content = response['choices'][0]['message']['content']
+            response_content = completion.choices[0].message['content']
         
         st.session_state.messages.append({"role": "assistant", "content": response_content})
 
