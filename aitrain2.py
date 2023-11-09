@@ -45,7 +45,7 @@ def load_data():
         for page in reader.pages:
             text += page.extract_text() + "\n"
         
-        docs = [Document(text=text, title="Marketing Plan Development)]
+        docs = [Document(text=text, title="Marketing Plan Development")]
         service_context = ServiceContext.from_defaults(llm=OpenAI(model="gpt-3.5-turbo", temperature=0.5))
         index = VectorStoreIndex.from_documents(docs, service_context=service_context)
         return index
