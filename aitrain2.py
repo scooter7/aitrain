@@ -96,6 +96,7 @@ if st.session_state.messages[-1]["role"] != "assistant":
                         # Provide links to all matching documents
                         response_content = "Here are the documents that might match your request:\n"
                         for title in matching_titles:
+                            # Ensure the title is linked to the correct URL
                             document_url = document_urls[title]
                             response_content += f"- [{title}]({document_url})\n"
                     else:
