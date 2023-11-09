@@ -1,12 +1,8 @@
 import streamlit as st
-import fitz  # PyMuPDF
 import os
 from github import Github
 import openai
 from pypdf import PdfReader
-
-# Download necessary NLTK data
-# nltk.download('popular') # This line should be run separately if needed, not within the app
 
 # Set up the Streamlit page
 st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
@@ -40,12 +36,10 @@ if "messages" not in st.session_state:
 # Function to load and index the Bain Report
 @st.experimental_singleton
 def load_data():
-    # Assuming the PDF file is in the same directory as the Streamlit app
     pdf_path = "docs/marketing_strategy_plan_methodology.pdf"
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"The file {pdf_path} was not found.")
     
-    # Use PyPDF2 to extract text from the PDF
     reader = PdfReader(pdf_path)
     text = ""
     for page in reader.pages:
@@ -56,28 +50,25 @@ def load_data():
 report_text = load_data()
 
 # Chat input
-if prompt := st.text_input("Your question"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+if 'user_input' not in st.session_state:
+    st.session_state['user_input'] = ''
 
-    # Generate and display assistant response
-if prompt := st.text_input("Your question"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+user_input = st.text_input("Your question", key="user_input_key")
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+    st.session_state['user_input'] = ''
 
     # Generate and display assistant response
     with st.spinner("Thinking..."):
-        # Check if the user is asking for a document
-        if any(title.lower() in prompt.lower() for title in document_titles):
-            # Find the matching document title
-            matching_titles = [title for title in document_titles if title.lower() in prompt.lower()]
+        if any(title.lower() in user_input.lower() for title in document_titles):
+            matching_titles = [title for title in document_titles if title.lower() in user_input.lower()]
             if matching_titles:
-                # Provide the link to the matching document
-                matching_title = matching_titles[0]  # Assuming the first match is the desired one
+                matching_title = matching_titles[0]
                 document_url = document_urls[matching_title]
                 response_content = f"I found the document you're looking for: [{matching_title}]({document_url})"
             else:
                 response_content = "I couldn't find the document you're looking for."
         else:
-            # Handle other types of queries
             chat_messages = [{"role": "system", "content": "You are a helpful assistant. Answer the user's questions accurately."}]
             for message in st.session_state.messages:
                 chat_messages.append({"role": message["role"], "content": message["content"]})
@@ -89,6 +80,7 @@ if prompt := st.text_input("Your question"):
             response_content = completion.choices[0].message['content']
         
         st.session_state.messages.append({"role": "assistant", "content": response_content})
+        st.session_state['user_input'] = ''
 
 # Display chat messages
 for message in st.session_state.messages:
