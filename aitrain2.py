@@ -12,7 +12,7 @@ import os
 nltk.download('popular')
 
 # Set up the Streamlit page
-st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(page_title="Develop a Marketing Plan", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
 # Check for necessary secrets
 if "OPENAI_API_KEY" not in st.secrets or "GITHUB_TOKEN" not in st.secrets:
@@ -34,18 +34,18 @@ document_urls = {title: content.download_url for title, content in zip(document_
 
 # Streamlit title and info
 st.title("Chat with Bain Report")
-st.info("This app allows you to ask questions about the Bain Report.", icon="📃")
+st.info("This app will guide you through developing a marketing plan.", icon="📃")
 
 # Initialize session state for messages if not already present
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Ask me a question about the Bain Report!"}
+        {"role": "assistant", "content": "Ask me a question about developing a marketing plan!"}
     ]
 
 # Function to load and index the Bain Report
 @st.cache_resource(show_spinner=False)
 def load_data():
-    with st.spinner(text="Loading and indexing the Bain Report – hang tight!"):
+    with st.spinner(text="Loading and indexing the marketing strategy methodology – hang tight!"):
         # Assuming the PDF file is in the same directory as the Streamlit app
         pdf_path = "docs/marketing_strategy_plan_methodology.pdf"
         if not os.path.exists(pdf_path):
@@ -57,7 +57,7 @@ def load_data():
         for page in reader.pages:
             text += page.extract_text() + "\n"
         
-        docs = [Document(text=text, title="Bain Report")]
+        docs = [Document(text=text, title="Marketing Plan Development")]
         service_context = ServiceContext.from_defaults(llm=OpenAI(model="gpt-3.5-turbo", temperature=0.5))
         index = VectorStoreIndex.from_documents(docs, service_context=service_context)
         return index
