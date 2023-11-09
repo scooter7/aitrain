@@ -86,15 +86,18 @@ if st.session_state.messages[-1]["role"] != "assistant":
             
             # Check if the user's query contains any of the document keywords
             if any(keyword in prompt.lower() for keyword in document_keywords):
-                # Attempt to find a close match for the document title in the user's query
-                # Increase the cutoff for more accurate matching
-                closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=1, cutoff=0.5)
+                # Attempt to find close matches for the document title in the user's query
+                # Lower the cutoff for broader matching
+                closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
                 if closest_matches:
-                    # Find the original title case from the document titles
-                    document_title = next((title for title in document_titles if title.lower() == closest_matches[0]), None)
-                    if document_title:
-                        document_url = document_urls[document_title]
-                        response_content = f"I found the document you're looking for: [{document_title}]({document_url})"
+                    # Find the original title cases from the document titles
+                    matching_titles = [title for title in document_titles if title.lower() in closest_matches]
+                    if matching_titles:
+                        # Provide links to all matching documents
+                        response_content = "Here are the documents that might match your request:\n"
+                        for title in matching_titles:
+                            document_url = document_urls[title]
+                            response_content += f"- [{title}]({document_url})\n"
                     else:
                         response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
                 else:
