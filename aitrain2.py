@@ -33,7 +33,7 @@ document_titles = [content.name for content in contents if content.name.endswith
 document_urls = {title: content.download_url for title, content in zip(document_titles, contents) if title.endswith(('.docx', '.xlsx'))}
 
 # Streamlit title and info
-st.title("Chat with Bain Report")
+st.title("Develop a Marketing Plan")
 st.info("This app will guide you through developing a marketing plan.", icon="📃")
 
 # Initialize session state for messages if not already present
