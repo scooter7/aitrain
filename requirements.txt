@@ -5,3 +5,4 @@ llama-index
 nltk
 logging
 os
+github
