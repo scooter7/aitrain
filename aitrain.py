@@ -9,7 +9,13 @@ import nltk
 nltk.download('popular')
 
 st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
-openai.api_key = st.secrets["openai_key"]
+if "OPENAI_API_KEY" not in st.secrets:
+    st.error("Please set the OPENAI_API_KEY secret on the Streamlit dashboard.")
+    sys.exit(1)
+
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+
+logging.info(f"OPENAI_API_KEY: {openai_api_key}")
 st.title("Chat with Bain Report")
 st.info("This app allows you to ask questions about the Bain Report.", icon="📃")
 
