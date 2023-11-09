@@ -81,14 +81,23 @@ for message in st.session_state.messages:
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            # Attempt to find a close match for the document title in the user's query
-            closest_matches = difflib.get_close_matches(prompt, document_titles, n=1, cutoff=0.1)
-            if closest_matches:
-                document_title = closest_matches[0]
-                document_url = document_urls[document_title]
-                response_content = f"I found the document you're looking for: [{document_title}]({document_url})"
+            # Define keywords that suggest the user is asking for a document
+            document_keywords = ['document', 'file', 'download', 'link']
+            
+            # Check if the user's query contains any of the document keywords
+            if any(keyword in prompt.lower() for keyword in document_keywords):
+                # Attempt to find a close match for the document title in the user's query
+                closest_matches = difflib.get_close_matches(prompt, document_titles, n=1, cutoff=0.1)
+                if closest_matches:
+                    document_title = closest_matches[0]
+                    document_url = document_urls[document_title]
+                    response_content = f"I found the document you're looking for: [{document_title}]({document_url})"
+                else:
+                    response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
             else:
-                response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document."
+                # If no document keywords are present, handle the query normally
+                response = st.session_state.chat_engine.chat(prompt)
+                response_content = response.response
             
             st.write(response_content)
             message = {"role": "assistant", "content": response_content}
