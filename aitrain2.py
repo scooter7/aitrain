@@ -95,7 +95,7 @@ if prompt := st.text_input("Your question"):
             for message in st.session_state.messages:
                 chat_messages.append({"role": message["role"], "content": message["content"]})
             
-            completion = openai.ChatCompletion.create(
+            completion = openai.ChatCompletions.create(
                 model="gpt-4",
                 messages=chat_messages
             )
