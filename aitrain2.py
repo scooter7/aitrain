@@ -6,6 +6,7 @@ import openai
 from pypdf import PdfReader
 import nltk
 import os
+import difflib
 
 # Download necessary NLTK data
 nltk.download('popular')
@@ -36,21 +37,16 @@ def get_docs_files():
     contents = repo.get_contents("docs")
     return {content.name: content.path for content in contents if content.type == "file"}
 
-# Function to check if the user's message is a request for a document
-def is_request_for_document(message):
-    # Simple check for keywords, can be replaced with more complex NLP
-    keywords = ["document", "report", "file", "pdf", "download", "link"]
-    return any(keyword in message.lower() for keyword in keywords)
+# Function to find the closest matching document name
+def find_closest_match(query, choices):
+    return difflib.get_close_matches(query, choices, n=1, cutoff=0.1)
 
-# Function to search for documents in the docs folder
+# Function to search for the most relevant document
 def search_docs(message, files_dict):
-    # Simple search based on file names, can be replaced with more complex search logic
-    for name, path in files_dict.items():
-        if name.lower() in message.lower():
-            return path
-    # If no direct match, check if any document-related keyword is in the message
-    if is_request_for_document(message):
-        return list(files_dict.values())[0]  # Return the first document as a fallback
+    # Use difflib to find the closest match to the message
+    closest_matches = find_closest_match(message, files_dict.keys())
+    if closest_matches:
+        return files_dict[closest_matches[0]]
     return None
 
 # Initialize chat messages if not already present in session state
@@ -98,13 +94,10 @@ if st.session_state.messages[-1]["role"] != "assistant":
         with st.spinner("Thinking..."):
             user_message = st.session_state.messages[-1]["content"]
             docs_files = get_docs_files()
-            if is_request_for_document(user_message):
-                doc_path = search_docs(user_message, docs_files)
-                if doc_path:
-                    file_url = get_github_file_url(doc_path)
-                    response_message = f"Here is the document you requested: [link]({file_url})"
-                else:
-                    response_message = "I couldn't find the document you're looking for. Please specify the document name or content you are interested in."
+            doc_path = search_docs(user_message, docs_files)
+            if doc_path:
+                file_url = get_github_file_url(doc_path)
+                response_message = f"Here is the document you requested: [link]({file_url})"
             else:
                 response = st.session_state.chat_engine.chat(user_message)
                 response_message = response.response
