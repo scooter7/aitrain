@@ -6,6 +6,7 @@ import openai
 from pypdf import PdfReader
 import nltk
 import os
+import difflib
 
 nltk.download('popular')
 
@@ -22,20 +23,20 @@ g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
 contents = repo.get_contents("docs")
-document_titles = [content.name for content in contents if content.name.endswith(('.docx', '.doc', '.xlsx', '.xls'))]
-document_urls = {title: content.download_url for title, content in zip(document_titles, contents) if title.endswith(('.docx', '.doc', '.xlsx', '.xls'))}
+document_titles = [content.name for content in contents if content.name.endswith('.pdf')]
+document_urls = {title: content.download_url for title, content in zip(document_titles, contents) if title.endswith('.pdf')}
 
-st.title("Learn about Marketing Plan Development")
-st.info("This app allows you learn about developing a marketing plan.", icon="📃")
+st.title("Chat with Bain Report")
+st.info("This app allows you to ask questions about the Bain Report.", icon="📃")
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Ask me a question about developing a marketing plan!"}
+        {"role": "assistant", "content": "Ask me a question about the Bain Report!"}
     ]
 
 @st.cache_resource(show_spinner=False)
 def load_data():
-    with st.spinner(text="Loading and indexing the material – hang tight!"):
+    with st.spinner(text="Loading and indexing the Bain Report – hang tight!"):
         pdf_path = "docs/marketing_strategy_plan_methodology.pdf"
         if not os.path.exists(pdf_path):
             raise FileNotFoundError(f"The file {pdf_path} was not found.")
@@ -45,7 +46,7 @@ def load_data():
         for page in reader.pages:
             text += page.extract_text() + "\n"
         
-        docs = [Document(text=text, title="Marketing Plan Development")]
+        docs = [Document(text=text, title="Bain Report")]
         service_context = ServiceContext.from_defaults(llm=OpenAI(model="gpt-3.5-turbo", temperature=0.5))
         index = VectorStoreIndex.from_documents(docs, service_context=service_context)
         return index
@@ -65,14 +66,11 @@ for message in st.session_state.messages:
 if st.session_state.messages[-1]["role"] != "assistant":
     with st.chat_message("assistant"):
         with st.spinner("Thinking..."):
-            if any(title.lower() in prompt.lower() for title in document_titles):
-                matching_titles = [title for title in document_titles if title.lower() in prompt.lower()]
-                if matching_titles:
-                    matching_title = matching_titles[0]
-                    document_url = document_urls[matching_title]
-                    response_content = f"I found the document you're looking for: [{matching_title}]({document_url})"
-                else:
-                    response_content = "I couldn't find the document you're looking for."
+            keywords = prompt.lower().split()
+            matching_title = difflib.get_close_matches(' '.join(keywords), document_titles, n=1)
+            if matching_title:
+                document_url = document_urls[matching_title[0]]
+                response_content = f"I found the document you're looking for: [{matching_title[0]}]({document_url})"
             else:
                 response = st.session_state.chat_engine.chat(prompt)
                 response_content = response.response
