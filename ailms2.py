@@ -99,7 +99,13 @@ def map_action_items_to_files(action_items, document_titles, document_urls):
     for item in action_items.keys():
         closest_match = difflib.get_close_matches(item, document_titles, n=1, cutoff=0.5)
         if closest_match:
-            action_items[item] = document_urls[closest_match[0]]
+            action_items[item] = document_urls.get(closest_match[0], "URL not found")
+        else:
+            action_items[item] = "URL not found"
+
+        # Debug print
+        print(f"Action Item: {item}, Closest Match: {closest_match}, URL: {action_items[item]}")
+
 
 # Function to extract text from a DOCX file
 def extract_text_from_docx(docx_path):
