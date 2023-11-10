@@ -141,11 +141,13 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
         context = st.session_state.uploaded_file_content[:1000] if 'uploaded_file_content' in st.session_state else ""
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "system", "content": "You are a helpful assistant."}] + st.session_state.messages,
-            max_tokens=150
+        response = openai.Completion.create(
+            engine="davinci",
+            prompt=context + "\n\n" + "\n".join([f"{message['role'].title()}: {message['content']}" for message in st.session_state.messages]),
+            max_tokens=150,
+            stop=None,
+            temperature=0.7
         )
-        response_content = response.choices[0].message['content']
+        response_content = response.choices[0].text.strip()
         st.session_state.messages.append({"role": "assistant", "content": response_content})
         st.write(f"Assistant: {response_content}")
