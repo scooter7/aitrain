@@ -17,6 +17,18 @@ github_token = st.secrets["GITHUB_TOKEN"]
 g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
+def get_document_titles_and_urls(repo):
+    contents = repo.get_contents("docs")
+    document_titles = []
+    document_urls = {}
+
+    for content_file in contents:
+        if content_file.type == "file" and content_file.name.endswith(('.pdf', '.docx', '.xlsx', '.pptx')):
+            document_titles.append(content_file.name)
+            document_urls[content_file.name] = content_file.download_url
+
+    return document_titles, document_urls
+
 def extract_text_by_stages(pptx_path):
     prs = Presentation(pptx_path)
     stages_text = {
