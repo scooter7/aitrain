@@ -83,6 +83,7 @@ for message in st.session_state.messages:
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
     # Check if the user's query contains any document-related keywords
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
+    response_content = ""
     if any(keyword in prompt.lower() for keyword in document_keywords):
         # Attempt to find close matches for the document title in the user's query
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
@@ -102,7 +103,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
             model="gpt-4",
             messages=formatted_messages
         )
-        response_content = response.choices[0].message['content']  # Correctly access the content attribute
+        response_content = response.choices[0].message.content  # Correctly access the content attribute
 
     # Append the assistant's response to the chat history
     st.session_state.messages.append({"role": "assistant", "content": response_content})
