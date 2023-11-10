@@ -17,6 +17,15 @@ github_token = st.secrets["GITHUB_TOKEN"]
 g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
+def save_uploaded_file(uploaded_file):
+    try:
+        with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        return os.path.join("tempDir", uploaded_file.name)
+    except Exception as e:
+        st.error(f"An error occurred while saving the file: {e}")
+        return None
+
 def get_document_titles_and_urls(repo):
     contents = repo.get_contents("docs")
     document_titles = []
