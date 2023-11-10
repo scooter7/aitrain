@@ -6,3 +6,4 @@ nltk
 PyGithub
 PyMuPDF
 python-pptx
+openpyxl
