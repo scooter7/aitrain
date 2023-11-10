@@ -32,16 +32,20 @@ def extract_text_by_stages(pdf_path):
         blocks = page.get_text("blocks")
         for block in blocks:
             text = block[4]
-            if text.startswith("Stage"):
+            if text.startswith("Stage") and "–" in text:  # Check for stage headings with an en dash
                 if current_stage:
-                    stages_text[current_stage] = "\n".join(current_text)
+                    # Save the text of the current stage before moving to the next
+                    stages_text[current_stage] = "\n".join(current_text).strip()
+                # Extract the stage title, assuming it's the first line of the block
                 current_stage = text.split("\n")[0]
                 current_text = [text]
             elif current_stage:
+                # Accumulate text for the current stage
                 current_text.append(text)
     
-    if current_stage:  # Don't forget to save the last stage
-        stages_text[current_stage] = "\n".join(current_text)
+    # Save the text of the last stage
+    if current_stage:
+        stages_text[current_stage] = "\n".join(current_text).strip()
 
     return stages_text
 
