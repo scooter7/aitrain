@@ -128,7 +128,7 @@ if prompt := st.text_input("Your question"):
 for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
-if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
     if any(keyword in prompt.lower() for keyword in document_keywords):
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
