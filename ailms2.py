@@ -93,6 +93,11 @@ def find_relevant_documents_for_stage(stage_content, document_titles, document_u
                 relevant_documents[action_item_title] = document_urls[closest_match[0]]
     return relevant_documents
 
+def summarize_text(text, max_length=500):
+    if len(text) > max_length:
+        return text[:max_length] + "..."
+    return text
+
 document_titles, document_urls = get_document_titles_and_urls(repo)
 
 stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
@@ -127,8 +132,9 @@ if uploaded_file is not None:
         file_content = extract_text_from_pdf(file_path)
     elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
         file_content = extract_data_from_xlsx(file_path)
-    st.session_state.uploaded_file_content = file_content
-    st.session_state.messages.append({"role": "system", "content": file_content})
+    summarized_content = summarize_text(file_content)
+    st.write("Summary of uploaded document:")
+    st.write(summarized_content)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
