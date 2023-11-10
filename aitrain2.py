@@ -60,7 +60,7 @@ def extract_text_by_stages(pptx_path):
     stages_content = {}
     for stage, (start_slide, end_slide) in stages_text.items():
         text_content = []
-        for slide_number in range(start_slide - 1, end_slide):
+        for slide number in range(start_slide - 1, end_slide):
             slide = prs.slides[slide_number]
             for shape in slide.shapes:
                 if hasattr(shape, "text"):
@@ -132,22 +132,19 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
     if any(keyword in prompt.lower() for keyword in document_keywords):
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
-        if closest_matches:
+        if closest matches:
             response_content = "Here are the documents that might match your request:\n"
-            for title in closest_matches:
+            for title in closest matches:
                 document_url = document_urls[title]
                 response_content += f"- [{title}]({document_url})\n"
         else:
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
         context = st.session_state.uploaded_file_content[:1000] if 'uploaded_file_content' in st.session_state else ""
-        response = openai.chat.completions.create(
-            engine="davinci",
-            prompt=context + "\n\n" + "\n".join([f"{message['role'].title()}: {message['content']}" for message in st.session_state.messages]),
-            max_tokens=150,
-            stop=None,
-            temperature=0.7
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "system", "content": "You are a helpful assistant."}] + st.session_state.messages
         )
-        response_content = response.choices[0].text.strip()
+        response_content = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": response_content})
         st.write(f"Assistant: {response_content}")
