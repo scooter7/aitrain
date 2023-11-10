@@ -33,9 +33,11 @@ def upload_to_github(file_path, repo, path_in_repo):
         st.success('File created on GitHub')
 
 def save_uploaded_file(uploaded_file):
-    with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
+    file_path = os.path.join("uploads", uploaded_file.name)
+    with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-    return os.path.join("tempDir", uploaded_file.name)
+    upload_to_github(file_path, repo, "uploads")
+    return file_path
 
 def get_document_titles_and_urls(repo):
     contents = repo.get_contents("docs")
@@ -88,21 +90,6 @@ def extract_data_from_xlsx(xlsx_path):
             text += " ".join([str(cell) if cell is not None else "" for cell in row]) + "\n"
     return text
 
-def find_action_items_in_stage(stage_content):
-    action_items = {}
-    lines = stage_content.split("\n")
-    for line in lines:
-        if "Action Item –" in line:
-            action_item_title = line.split("–")[1].strip()
-            action_items[action_item_title] = None
-    return action_items
-
-def map_action_items_to_files(action_items, document_titles, document_urls):
-    for item in action_items.keys():
-        closest_match = difflib.get_close_matches(item, document_titles, n=1, cutoff=0.5)
-        if closest_match:
-            action_items[item] = document_urls[closest_match[0]]
-
 document_titles, document_urls = get_document_titles_and_urls(repo)
 
 stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
@@ -118,20 +105,12 @@ if st.button("Go to next stage"):
         st.session_state.current_stage_index = 0
 
 current_stage = current_stage_keys[st.session_state.current_stage_index]
-current_stage_content = stages_content[current_stage]
 st.subheader(current_stage)
-st.write(current_stage_content)
-
-action_items = find_action_items_in_stage(current_stage_content)
-map_action_items_to_files(action_items, document_titles, document_urls)
-
-for item, url in action_items.items():
-    st.markdown(f"- **{item}**: [Download]({url})")
+st.write(stages_content[current_stage])
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx', 'pptx', 'pdf'])
 if uploaded_file is not None:
     file_path = save_uploaded_file(uploaded_file)
-    upload_to_github(file_path, repo, "uploads")
     file_content = ""
     if uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         file_content = extract_text_from_docx(file_path)
@@ -151,10 +130,21 @@ for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=st.session_state.messages
-    )
-    response_content = response.choices[0].message.content
-    st.session_state.messages.append({"role": "assistant", "content": response_content})
-    st.write(f"Assistant: {response_content}")
+    document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
+    if any(keyword in prompt.lower() for keyword in document_keywords):
+        closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
+        if closest_matches:
+            response_content = "Here are the documents that might match your request:\n"
+            for title in closest_matches:
+                document_url = document_urls[title]
+                response_content += f"- [{title}]({document_url})\n"
+        else:
+            response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
+    else:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=st.session_state.messages
+        )
+        response_content = response.choices[0].message.content
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
+        st.write(f"Assistant: {response_content}")
