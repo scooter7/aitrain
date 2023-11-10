@@ -18,41 +18,34 @@ g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
 def upload_to_github(file_path, repo, path_in_repo):
+    with open(file_path, "rb") as file:
+        content = file.read()
+    git_file = os.path.join(path_in_repo, os.path.basename(file_path))
     try:
-        with open(file_path, "rb") as file:
-            content = file.read()
-        git_file = path_in_repo + '/' + os.path.basename(file_path)
-        try:
-            # This will try to update the file if it exists
-            contents = repo.get_contents(git_file)
-            repo.update_file(contents.path, "Updating file", content, contents.sha)
-            st.success('File updated on GitHub')
-        except:
-            # If the file doesn't exist, it will create a new one
-            repo.create_file(git_file, "Creating new file", content)
-            st.success('File created on GitHub')
-    except Exception as e:
-        st.error(f"An error occurred while uploading the file: {e}")
+        contents = repo.get_contents(git_file)
+        repo.update_file(contents.path, "Updating file", content, contents.sha)
+        st.success('File updated on GitHub')
+    except:
+        repo.create_file(git_file, "Creating new file", content)
+        st.success('File created on GitHub')
 
 def save_uploaded_file(uploaded_file):
-    try:
-        with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        return os.path.join("tempDir", uploaded_file.name)
-    except Exception as e:
-        st.error(f"An error occurred while saving the file: {e}")
-        return None
+    temp_dir = "tempDir"
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    file_path = os.path.join(temp_dir, uploaded_file.name)
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    return file_path
 
 def get_document_titles_and_urls(repo):
     contents = repo.get_contents("docs")
     document_titles = []
     document_urls = {}
-
     for content_file in contents:
         if content_file.type == "file" and content_file.name.endswith(('.pdf', '.docx', '.xlsx', '.pptx')):
             document_titles.append(content_file.name)
             document_urls[content_file.name] = content_file.download_url
-
     return document_titles, document_urls
 
 def extract_text_by_stages(pptx_path):
@@ -66,7 +59,6 @@ def extract_text_by_stages(pptx_path):
         "Stage 6": [31, 36],
     }
     stages_content = {}
-
     for stage, (start_slide, end_slide) in stages_text.items():
         text_content = []
         for slide_number in range(start_slide - 1, end_slide):
@@ -75,7 +67,6 @@ def extract_text_by_stages(pptx_path):
                 if hasattr(shape, "text"):
                     text_content.append(shape.text.strip())
         stages_content[stage] = "\n".join(text_content)
-
     return stages_content
 
 document_titles, document_urls = get_document_titles_and_urls(repo)
@@ -99,7 +90,7 @@ st.write(stages_content[current_stage])
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
 if uploaded_file is not None:
     file_path = save_uploaded_file(uploaded_file)
-    upload_to_github(file_path, repo, f"uploads/{uploaded_file.name}")
+    upload_to_github(file_path, repo, "uploads")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
