@@ -44,17 +44,23 @@ def save_uploaded_file(uploaded_file):
         f.write(uploaded_file.getbuffer())
     return file_path
 
-# Function to get document titles and GitHub URLs
-def get_document_titles_and_github_urls(repo):
-    contents = repo.get_contents("docs")
+# Function to get document titles and URLs from the docs directory in the repository
+def get_document_titles_and_urls(repo):
+    contents = repo.get_contents("docs")  # Gets the contents of the 'docs' directory
     document_titles = []
     document_urls = {}
+
     for content_file in contents:
-        if content_file.type == "file" and content_file.name.endswith(('.pdf', '.docx', '.xlsx', '.pptx')):
+        if content_file.type == "file" and content_file.name.endswith(('.pdf', '.docx', '.xlsx')):
             document_titles.append(content_file.name)
+            # Generate GitHub URL for the file
             document_url = f"https://github.com/{repo.full_name}/blob/main/docs/{content_file.name}"
             document_urls[content_file.name] = document_url
+
     return document_titles, document_urls
+
+# Fetch the actual document titles and URLs
+document_titles, document_urls = get_document_titles_and_urls(repo)
 
 # Function to extract text by stages from a PowerPoint presentation
 def extract_text_by_stages(pptx_path):
