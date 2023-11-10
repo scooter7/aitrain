@@ -8,7 +8,7 @@ import openpyxl
 from docx import Document
 import fitz
 
-st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto")
 
 if "OPENAI_API_KEY" not in st.secrets or "GITHUB_TOKEN" not in st.secrets:
     st.error("Please set the necessary secrets (OPENAI_API_KEY and GITHUB_TOKEN) on the Streamlit dashboard.")
@@ -33,11 +33,9 @@ def upload_to_github(file_path, repo, path_in_repo):
         st.success('File created on GitHub')
 
 def save_uploaded_file(uploaded_file):
-    file_path = os.path.join("uploads", uploaded_file.name)
-    with open(file_path, "wb") as f:
+    with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
         f.write(uploaded_file.getbuffer())
-    upload_to_github(file_path, repo, "uploads")
-    return file_path
+    return os.path.join("tempDir", uploaded_file.name)
 
 def get_document_titles_and_urls(repo):
     contents = repo.get_contents("docs")
@@ -90,6 +88,17 @@ def extract_data_from_xlsx(xlsx_path):
             text += " ".join([str(cell) if cell is not None else "" for cell in row]) + "\n"
     return text
 
+def find_relevant_documents_for_stage(stage_content, document_titles, document_urls):
+    relevant_documents = {}
+    lines = stage_content.split("\n")
+    for line in lines:
+        if "Action Item –" in line:
+            action_item_title = line.split("–")[1].strip()
+            closest_match = difflib.get_close_matches(action_item_title, document_titles, n=1, cutoff=0.5)
+            if closest_match:
+                relevant_documents[action_item_title] = document_urls[closest_match[0]]
+    return relevant_documents
+
 document_titles, document_urls = get_document_titles_and_urls(repo)
 
 stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
@@ -106,11 +115,17 @@ if st.button("Go to next stage"):
 
 current_stage = current_stage_keys[st.session_state.current_stage_index]
 st.subheader(current_stage)
-st.write(stages_content[current_stage])
+current_stage_content = stages_content[current_stage]
+st.write(current_stage_content)
+
+relevant_documents = find_relevant_documents_for_stage(current_stage_content, document_titles, document_urls)
+for title, url in relevant_documents.items():
+    st.markdown(f"- [{title}]({url})")
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx', 'pptx', 'pdf'])
 if uploaded_file is not None:
     file_path = save_uploaded_file(uploaded_file)
+    upload_to_github(file_path, repo, "uploads")
     file_content = ""
     if uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
         file_content = extract_text_from_docx(file_path)
@@ -119,6 +134,7 @@ if uploaded_file is not None:
     elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
         file_content = extract_data_from_xlsx(file_path)
     st.session_state.uploaded_file_content = file_content
+    st.session_state.messages.append({"role": "system", "content": file_content})
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -130,21 +146,10 @@ for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-    document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
-    if any(keyword in prompt.lower() for keyword in document_keywords):
-        closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
-        if closest_matches:
-            response_content = "Here are the documents that might match your request:\n"
-            for title in closest_matches:
-                document_url = document_urls[title]
-                response_content += f"- [{title}]({document_url})\n"
-        else:
-            response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
-    else:
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=st.session_state.messages
-        )
-        response_content = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": response_content})
-        st.write(f"Assistant: {response_content}")
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=st.session_state.messages
+    )
+    response_content = response.choices[0].message.content
+    st.session_state.messages.append({"role": "assistant", "content": response_content})
+    st.write(f"Assistant: {response_content}")
