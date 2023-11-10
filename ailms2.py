@@ -143,28 +143,18 @@ if uploaded_file is not None:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if prompt := st.text_input("Your question"):
+prompt = st.text_input("Your question")
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
 
 for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
-if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-    document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
-    if any(keyword in prompt.lower() for keyword in document_keywords):
-        closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
-        if closest_matches:
-            response_content = "Here are the documents that might match your request:\n"
-            for title in closest_matches:
-                document_url = document_urls[title]
-                response_content += f"- [{title}]({document_url})\n"
-        else:
-            response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
-    else:
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=st.session_state.messages
-        )
-        response_content = response.choices[0].message.content
-        st.session_state.messages.append({"role": "assistant", "content": response_content})
-        st.write(f"Assistant: {response_content}")
+if prompt:
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=st.session_state.messages
+    )
+    response_content = response.choices[0].message.content
+    st.session_state.messages.append({"role": "assistant", "content": response_content})
+    st.write(f"Assistant: {response_content}")
