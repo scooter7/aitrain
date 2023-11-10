@@ -5,3 +5,4 @@ pypdf
 nltk
 PyGithub
 PyMuPDF
+python-pptx
