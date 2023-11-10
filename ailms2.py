@@ -26,9 +26,8 @@ def extract_text_by_stages(pdf_path):
     for page in doc:
         blocks = page.get_text("blocks")
         for block in blocks:
-            # Check if the block is a text block
-            if block[0] == 0:  # In PyMuPDF, text blocks are of type 0
-                text = block[4].strip()  # The text is at index 4
+            if block[0] == 0:
+                text = block[4].strip()
                 if text.startswith("Stage") and "-" in text:
                     if current_stage:
                         stages_text[current_stage] = "\n".join(current_text)
@@ -76,11 +75,14 @@ current_stage_keys = list(stages_text.keys())
 if st.button("Go to next stage"):
     st.session_state.current_stage_index += 1
     if st.session_state.current_stage_index >= len(current_stage_keys):
-        st.session_state.current_stage_index = 0
+        st.session_state.current_stage_index = 0  # Reset to the first stage
 
-current_stage = current_stage_keys[st.session_state.current_stage_index]
-st.subheader(current_stage)
-st.write(stages_text[current_stage])
+if 0 <= st.session_state.current_stage_index < len(current_stage_keys):
+    current_stage = current_stage_keys[st.session_state.current_stage_index]
+    st.subheader(current_stage)
+    st.write(stages_text[current_stage])
+else:
+    st.error("You've reached the end of the stages or an invalid stage index.")
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
 if uploaded_file is not None:
