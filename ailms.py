@@ -81,7 +81,7 @@ for message in st.session_state.messages:
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
     # Corrected API call to use openai.ChatCompletions.create
-    response = openai.Chat.Completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.messages
     )
