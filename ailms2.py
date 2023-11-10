@@ -1,5 +1,5 @@
 import streamlit as st
-import fitz  # PyMuPDF
+from pptx import Presentation
 import os
 from github import Github
 import openai
@@ -17,77 +17,46 @@ github_token = st.secrets["GITHUB_TOKEN"]
 g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
-def extract_text_by_stages(pdf_path):
-    doc = fitz.open(pdf_path)
-    stages_text = {}
-    current_stage = None
-    current_text = []
+def extract_text_by_stages(pptx_path):
+    prs = Presentation(pptx_path)
+    stages_text = {
+        "Stage 1": [2, 9],
+        "Stage 2": [10, 14],
+        "Stage 3": [15, 21],
+        "Stage 4": [22, 24],
+        "Stage 5": [25, 30],
+        "Stage 6": [31, 36],
+    }
+    stages_content = {}
 
-    for page in doc:
-        blocks = page.get_text("blocks")
-        for block in blocks:
-            # Check if the block is a text block
-            if block[0] == 0:  # In PyMuPDF, text blocks are of type 0
-                text = block[4].strip()  # The text is at index 4
-                # Adjust the condition to match the stage format "STAGE 01 - "
-                if text.upper().startswith("STAGE") and "-" in text:
-                    if current_stage:
-                        stages_text[current_stage] = "\n".join(current_text)
-                    current_stage = text.split("\n")[0]
-                    current_text = []
-                else:
-                    current_text.append(text)
-    
-    if current_stage:
-        stages_text[current_stage] = "\n".join(current_text)
+    for stage, (start_slide, end_slide) in stages_text.items():
+        text_content = []
+        for slide_number in range(start_slide - 1, end_slide):
+            slide = prs.slides[slide_number]
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text_content.append(shape.text.strip())
+        stages_content[stage] = "\n".join(text_content)
 
-    return stages_text
-
-def save_uploaded_file(uploaded_file):
-    with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    return f.name
-
-def upload_to_github(file_path, repo, path_in_repo):
-    with open(file_path, "rb") as f:
-        content = f.read()
-    repo.create_file(path_in_repo, "commit message", content)
-
-def get_document_titles_and_urls(repo):
-    contents = repo.get_contents("docs")
-    document_titles = []
-    document_urls = {}
-
-    for content_file in contents:
-        if content_file.type == "file" and content_file.name.endswith(('.pdf', '.docx', '.xlsx')):
-            document_titles.append(content_file.name)
-            document_urls[content_file.name] = content_file.download_url
-
-    return document_titles, document_urls
+    return stages_content
 
 document_titles, document_urls = get_document_titles_and_urls(repo)
 
-stages_text = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pdf")
+stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
 
 if 'current_stage_index' not in st.session_state:
-    st.session_state.current_stage_index = 0  # Initialize to the first stage
+    st.session_state.current_stage_index = 0
 
-current_stage_keys = list(stages_text.keys())
+current_stage_keys = list(stages_content.keys())
 
-# Check if there are any stages available
-if not current_stage_keys:
-    st.error("No stages found in the document.")
-else:
-    if st.button("Go to next stage"):
-        # Increment the stage index, wrapping back to 0 if it exceeds the number of stages
-        st.session_state.current_stage_index = (st.session_state.current_stage_index + 1) % len(current_stage_keys)
+if st.button("Go to next stage"):
+    st.session_state.current_stage_index += 1
+    if st.session_state.current_stage_index >= len(current_stage_keys):
+        st.session_state.current_stage_index = 0
 
-    # Ensure that the current stage index is always within the range of available stages
-    st.session_state.current_stage_index = st.session_state.current_stage_index % len(current_stage_keys)
-
-    current_stage = current_stage_keys[st.session_state.current_stage_index]
-    st.subheader(current_stage)
-    st.write(stages_text[current_stage])
+current_stage = current_stage_keys[st.session_state.current_stage_index]
+st.subheader(current_stage)
+st.write(stages_content[current_stage])
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
 if uploaded_file is not None:
