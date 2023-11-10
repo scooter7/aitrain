@@ -75,27 +75,20 @@ if "messages" not in st.session_state:
 if prompt := st.text_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-for message in st.session_state.messages:
-    st.write(f"{message['role'].title()}: {message['content']}")
-
-if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
-    document_titles = []  # Populate this list with actual document titles
-    document_urls = {}  # Populate this dictionary with {title: url} pairs
+    document_titles = ["Sample Document Title"]  # Replace with actual document titles
+    document_urls = {"Sample Document Title": "http://example.com/document"}  # Replace with actual URLs
 
     if any(keyword in prompt.lower() for keyword in document_keywords):
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
         if closest_matches:
             matching_titles = [title for title in document_titles if title.lower() in closest_matches]
-            if matching_titles:
-                response_content = "Here are the documents that might match your request:\n"
-                for title in matching_titles:
-                    document_url = document_urls[title]
-                    response_content += f"- [{title}]({document_url})\n"
-            else:
-                response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
+            response_content = "Here are the documents that might match your request:\n"
+            for title in matching_titles:
+                document_url = document_urls[title]
+                response_content += f"- [{title}]({document_url})\n"
         else:
-            response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
+            response_content = "I couldn't find the document you're looking for."
     else:
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
         completion = openai.chat.completions.create(
@@ -105,3 +98,6 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
         response_content = completion.choices[0].message['content']
 
     st.session_state.messages.append({"role": "assistant", "content": response_content})
+
+for message in st.session_state.messages:
+    st.write(f"{message['role'].title()}: {message['content']}")
