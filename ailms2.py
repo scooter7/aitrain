@@ -103,9 +103,9 @@ def map_action_items_to_files(action_items, document_titles, document_urls):
         if closest_match:
             action_items[item] = document_urls[closest_match[0]]
 
-stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
-
 document_titles, document_urls = get_document_titles_and_urls(repo)
+
+stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
 
 if 'current_stage_index' not in st.session_state:
     st.session_state.current_stage_index = 0
@@ -118,11 +118,15 @@ if st.button("Go to next stage"):
         st.session_state.current_stage_index = 0
 
 current_stage = current_stage_keys[st.session_state.current_stage_index]
+current_stage_content = stages_content[current_stage]
 st.subheader(current_stage)
-st.write(stages_content[current_stage])
+st.write(current_stage_content)
 
-action_items = find_action_items_in_stage(stages_content[current_stage])
+action_items = find_action_items_in_stage(current_stage_content)
 map_action_items_to_files(action_items, document_titles, document_urls)
+
+for item, url in action_items.items():
+    st.markdown(f"- **{item}**: [Download]({url})")
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx', 'pptx', 'pdf'])
 if uploaded_file is not None:
@@ -140,29 +144,17 @@ if uploaded_file is not None:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-prompt = st.text_input("Your question")
-if prompt:
+if prompt := st.text_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
 for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
-if prompt:
-    # Check if the prompt matches any action item
-    matched_action_item = None
-    for item, url in action_items.items():
-        if item.lower() in prompt.lower():
-            matched_action_item = (item, url)
-            break
-
-    if matched_action_item:
-        response_content = f"You asked for '{matched_action_item[0]}'. Here is the link: [{matched_action_item[0]}]({matched_action_item[1]})"
-    else:
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=st.session_state.messages
-        )
-        response_content = response.choices[0].message.content
-
+if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
+    response = openai.chat.completions.create(
+        model="gpt-4",
+        messages=st.session_state.messages
+    )
+    response_content = response.choices[0].message.content
     st.session_state.messages.append({"role": "assistant", "content": response_content})
     st.write(f"Assistant: {response_content}")
