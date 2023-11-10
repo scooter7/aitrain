@@ -17,6 +17,23 @@ github_token = st.secrets["GITHUB_TOKEN"]
 g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
+def upload_to_github(file_path, repo, path_in_repo):
+    try:
+        with open(file_path, "rb") as file:
+            content = file.read()
+        git_file = path_in_repo + '/' + os.path.basename(file_path)
+        try:
+            # This will try to update the file if it exists
+            contents = repo.get_contents(git_file)
+            repo.update_file(contents.path, "Updating file", content, contents.sha)
+            st.success('File updated on GitHub')
+        except:
+            # If the file doesn't exist, it will create a new one
+            repo.create_file(git_file, "Creating new file", content)
+            st.success('File created on GitHub')
+    except Exception as e:
+        st.error(f"An error occurred while uploading the file: {e}")
+
 def save_uploaded_file(uploaded_file):
     try:
         with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
