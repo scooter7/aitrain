@@ -80,6 +80,19 @@ def find_relevant_documents_for_stage(stage_content, document_titles, document_u
                 relevant_documents[action_item_title] = document_urls[closest_match[0]]
     return relevant_documents
 
+def extract_text_from_docx(docx_path):
+    doc = Document(docx_path)
+    return "\n".join([paragraph.text for paragraph in doc.paragraphs])
+
+def extract_data_from_xlsx(xlsx_path):
+    workbook = openpyxl.load_workbook(xlsx_path)
+    text = ""
+    for sheet in workbook.sheetnames:
+        worksheet = workbook[sheet]
+        for row in worksheet.iter_rows(values_only=True):
+            text += " ".join([str(cell) if cell is not None else "" for cell in row]) + "\n"
+    return text
+
 def summarize_text(text, max_length=500):
     if len(text) > max_length:
         return text[:max_length] + "..."
