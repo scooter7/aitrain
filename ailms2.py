@@ -33,9 +33,10 @@ def upload_to_github(file_path, repo, path_in_repo):
         st.success('File created on GitHub')
 
 def save_uploaded_file(uploaded_file):
-    with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
+    file_path = os.path.join("uploads", uploaded_file.name)
+    with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-    return os.path.join("tempDir", uploaded_file.name)
+    return file_path
 
 def get_document_titles_and_urls(repo):
     contents = repo.get_contents("docs")
