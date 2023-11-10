@@ -71,31 +71,39 @@ for stage, text in stages_text.items():
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Chat input
 if prompt := st.text_input("Your question"):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
+# Display chat messages
 for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
+# Generate and display assistant response
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
+    # Check if the user's query contains any document-related keywords
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
-
     if any(keyword in prompt.lower() for keyword in document_keywords):
+        # Attempt to find close matches for the document title in the user's query
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
         if closest_matches:
-            matching_titles = [title for title in document_titles if title.lower() in closest_matches]
+            # Provide links to all matching documents
             response_content = "Here are the documents that might match your request:\n"
-            for title in matching_titles:
+            for title in closest_matches:
+                # Ensure the title is linked to the correct URL
                 document_url = document_urls[title]
                 response_content += f"- [{title}]({document_url})\n"
         else:
-            response_content = "I couldn't find the document you're looking for."
+            response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
+        # If no document keywords are present, handle the query normally
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
-        completion = openai.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=formatted_messages
         )
-        response_content = completion.choices[0].message.content
+        response_content = response.choices[0].message['content']  # Correctly access the content attribute
 
+    # Append the assistant's response to the chat history
     st.session_state.messages.append({"role": "assistant", "content": response_content})
+    st.write(f"Assistant: {response_content}")
