@@ -68,12 +68,16 @@ document_titles, document_urls = get_document_titles_and_urls(repo)
 stages_text = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pdf")
 
 if 'current_stage_index' not in st.session_state:
-    st.session_state.current_stage_index = 0
+    st.session_state.current_stage_index = 0  # Initialize to the first stage
 
 current_stage_keys = list(stages_text.keys())
 
 if st.button("Go to next stage"):
+    # Increment the stage index, wrapping back to 0 if it exceeds the number of stages
     st.session_state.current_stage_index = (st.session_state.current_stage_index + 1) % len(current_stage_keys)
+
+# Ensure that the current stage index is always within the range of available stages
+st.session_state.current_stage_index = st.session_state.current_stage_index % len(current_stage_keys)
 
 current_stage = current_stage_keys[st.session_state.current_stage_index]
 st.subheader(current_stage)
@@ -106,7 +110,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=formatted_messages
         )
