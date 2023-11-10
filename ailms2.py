@@ -72,16 +72,20 @@ if 'current_stage_index' not in st.session_state:
 
 current_stage_keys = list(stages_text.keys())
 
-if st.button("Go to next stage"):
-    # Increment the stage index, wrapping back to 0 if it exceeds the number of stages
-    st.session_state.current_stage_index = (st.session_state.current_stage_index + 1) % len(current_stage_keys)
+# Check if there are any stages available
+if not current_stage_keys:
+    st.error("No stages found in the document.")
+else:
+    if st.button("Go to next stage"):
+        # Increment the stage index, wrapping back to 0 if it exceeds the number of stages
+        st.session_state.current_stage_index = (st.session_state.current_stage_index + 1) % len(current_stage_keys)
 
-# Ensure that the current stage index is always within the range of available stages
-st.session_state.current_stage_index = st.session_state.current_stage_index % len(current_stage_keys)
+    # Ensure that the current stage index is always within the range of available stages
+    st.session_state.current_stage_index = st.session_state.current_stage_index % len(current_stage_keys)
 
-current_stage = current_stage_keys[st.session_state.current_stage_index]
-st.subheader(current_stage)
-st.write(stages_text[current_stage])
+    current_stage = current_stage_keys[st.session_state.current_stage_index]
+    st.subheader(current_stage)
+    st.write(stages_text[current_stage])
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
 if uploaded_file is not None:
