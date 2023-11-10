@@ -69,26 +69,6 @@ def extract_text_by_stages(pptx_path):
         stages_content[stage] = "\n".join(text_content)
     return stages_content
 
-def extract_text_from_docx(docx_path):
-    doc = Document(docx_path)
-    return "\n".join([paragraph.text for paragraph in doc.paragraphs])
-
-def extract_text_from_pdf(pdf_path):
-    with fitz.open(pdf_path) as doc:
-        text = ""
-        for page in doc:
-            text += page.get_text()
-    return text
-
-def extract_data_from_xlsx(xlsx_path):
-    workbook = openpyxl.load_workbook(xlsx_path)
-    text = ""
-    for sheet in workbook.sheetnames:
-        worksheet = workbook[sheet]
-        for row in worksheet.iter_rows(values_only=True):
-            text += " ".join([str(cell) if cell is not None else "" for cell in row]) + "\n"
-    return text
-
 def find_relevant_documents_for_stage(stage_content, document_titles, document_urls):
     relevant_documents = {}
     lines = stage_content.split("\n")
