@@ -123,7 +123,7 @@ def summarize_text(text, max_length=500):
     return text
 
 # Main code
-document_titles, document_urls = get_document_titles_and_github_urls(repo)
+document_titles, document_urls = get_document_titles_and_urls(repo)
 stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
 
 if 'current_stage_index' not in st.session_state:
