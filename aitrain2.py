@@ -134,7 +134,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
         if closest_matches:
             response_content = "Here are the documents that might match your request:\n"
-            for title in closest_matches:
+            for title in closest matches:
                 document_url = document_urls[title]
                 response_content += f"- [{title}]({document_url})\n"
         else:
