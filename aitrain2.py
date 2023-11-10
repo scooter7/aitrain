@@ -141,7 +141,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
         context = st.session_state.uploaded_file_content[:1000] if 'uploaded_file_content' in st.session_state else ""
-        response = openai.Completion.create(
+        response = openai.chat.completions.create(
             engine="davinci",
             prompt=context + "\n\n" + "\n".join([f"{message['role'].title()}: {message['content']}" for message in st.session_state.messages]),
             max_tokens=150,
