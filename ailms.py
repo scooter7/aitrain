@@ -80,9 +80,9 @@ for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-    response = openai.Completion.create(
-        engine="davinci",
-        prompt=st.session_state.messages[-1]["content"],
-        max_tokens=150
+    # Corrected API call to use openai.ChatCompletions.create
+    response = openai.ChatCompletions.create(
+        model="gpt-4",
+        messages=st.session_state.messages
     )
-    st.session_state.messages.append({"role": "assistant", "content": response.choices[0].text})
+    st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message['content']})
