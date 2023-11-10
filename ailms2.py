@@ -123,9 +123,6 @@ st.write(stages_content[current_stage])
 
 action_items = find_action_items_in_stage(stages_content[current_stage])
 map_action_items_to_files(action_items, document_titles, document_urls)
-for item, url in action_items.items():
-    if url:
-        st.markdown(f"- [{item}]({url})")
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx', 'pptx', 'pdf'])
 if uploaded_file is not None:
@@ -151,10 +148,21 @@ for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
 if prompt:
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=st.session_state.messages
-    )
-    response_content = response.choices[0].message.content
+    # Check if the prompt matches any action item
+    matched_action_item = None
+    for item, url in action_items.items():
+        if item.lower() in prompt.lower():
+            matched_action_item = (item, url)
+            break
+
+    if matched_action_item:
+        response_content = f"You asked for '{matched_action_item[0]}'. Here is the link: [{matched_action_item[0]}]({matched_action_item[1]})"
+    else:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=st.session_state.messages
+        )
+        response_content = response.choices[0].message.content
+
     st.session_state.messages.append({"role": "assistant", "content": response_content})
     st.write(f"Assistant: {response_content}")
