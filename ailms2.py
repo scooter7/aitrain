@@ -31,21 +31,20 @@ def extract_text_by_stages(pdf_path):
     for page in doc:
         blocks = page.get_text("blocks")
         for block in blocks:
-            # Check if the block is an image block
-            if block[0] == fitz.TEXT_BLOCK_TYPE_IMAGE:
-                continue  # Skip image blocks
-            
-            text = block[4].strip()  # Get the text content of the block
-            if text.startswith("Stage") and "–" in text:  # Check for stage headings with an en dash
-                if current_stage:
-                    # Save the text of the current stage before moving to the next
-                    stages_text[current_stage] = "\n".join(current_text).strip()
-                    current_text = []  # Reset the current text for the next stage
-                # Extract the stage title, assuming it's the first line of the block
-                current_stage = text.split("\n")[0]
-            else:
-                # Add text to the current stage
-                current_text.append(text)
+            # Check if the block is a text block
+            block_type = block[0]
+            if block_type == 0:  # Text block type is 0
+                text = block[4].strip()  # Get the text content of the block
+                if text.startswith("Stage") and "–" in text:  # Check for stage headings with an en dash
+                    if current_stage:
+                        # Save the text of the current stage before moving to the next
+                        stages_text[current_stage] = "\n".join(current_text).strip()
+                        current_text = []  # Reset the current text for the next stage
+                    # Extract the stage title, assuming it's the first line of the block
+                    current_stage = text.split("\n")[0]
+                else:
+                    # Add text to the current stage
+                    current_text.append(text)
     
     # Save the text of the last stage
     if current_stage:
