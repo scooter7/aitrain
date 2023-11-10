@@ -98,10 +98,10 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
-        response = openai.ChatCompletion.create(
+        completion = openai.chat.completions.create(
             model="gpt-4",
             messages=formatted_messages
         )
-        response_content = response.choices[0].message['content']
+        response_content = completion.choices[0].message['content']
 
     st.session_state.messages.append({"role": "assistant", "content": response_content})
