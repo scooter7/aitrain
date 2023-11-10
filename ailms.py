@@ -98,7 +98,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
     else:
         # If no document keywords are present, handle the query normally
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-4",
             messages=formatted_messages
         )
