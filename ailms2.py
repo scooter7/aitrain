@@ -97,15 +97,26 @@ def find_action_items_in_stage(stage_content):
 # Function to map action items to files
 def map_action_items_to_files(action_items, document_titles, document_urls):
     for item in action_items.keys():
-        closest_match = difflib.get_close_matches(item, document_titles, n=1, cutoff=0.5)
+        # Extract keywords from the action item (simple example)
+        keywords = item.split()  # This can be more sophisticated based on your needs
+
+        # Find the closest match based on keywords
+        closest_match = None
+        highest_similarity = 0
+        for title in document_titles:
+            similarity = sum(keyword.lower() in title.lower() for keyword in keywords)
+            if similarity > highest_similarity:
+                highest_similarity = similarity
+                closest_match = title
+
+        # Map to URL
         if closest_match:
-            action_items[item] = document_urls.get(closest_match[0], "URL not found")
+            action_items[item] = document_urls.get(closest_match, "URL not found")
         else:
             action_items[item] = "URL not found"
 
         # Debug print
-        print(f"Action Item: {item}, Closest Match: {closest_match}, URL: {action_items[item]}")
-
+        print(f"Action Item: {item}, Keywords: {keywords}, Closest Match: {closest_match}, URL: {action_items[item]}")
 
 # Function to extract text from a DOCX file
 def extract_text_from_docx(docx_path):
