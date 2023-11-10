@@ -85,4 +85,5 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
         model="gpt-4",
         messages=st.session_state.messages
     )
-    st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message['content']})
+    st.session_state.messages.append({"role": "assistant", "content": response.choices[0].message.content})
+
