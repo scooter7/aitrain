@@ -97,8 +97,12 @@ def find_action_items_in_stage(stage_content):
 # Function to map action items to files
 def map_action_items_to_files(action_items, document_titles, document_urls):
     for item in action_items.keys():
-        # Extract keywords from the action item (simple example)
-        keywords = item.split()  # This can be more sophisticated based on your needs
+        # Extract terms after "use the" or "use our"
+        keywords = []
+        if "use the" in item:
+            keywords = item.split("use the")[-1].strip().split()
+        elif "use our" in item:
+            keywords = item.split("use our")[-1].strip().split()
 
         # Find the closest match based on keywords
         closest_match = None
