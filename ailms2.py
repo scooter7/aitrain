@@ -69,16 +69,20 @@ def extract_text_by_stages(pptx_path):
         stages_content[stage] = "\n".join(text_content)
     return stages_content
 
-def find_relevant_documents_for_stage(stage_content, document_titles, document_urls):
-    relevant_documents = {}
+def find_action_items_in_stage(stage_content):
+    action_items = {}
     lines = stage_content.split("\n")
     for line in lines:
         if "Action Item –" in line:
             action_item_title = line.split("–")[1].strip()
-            closest_match = difflib.get_close_matches(action_item_title, document_titles, n=1, cutoff=0.5)
-            if closest_match:
-                relevant_documents[action_item_title] = document_urls[closest_match[0]]
-    return relevant_documents
+            action_items[action_item_title] = None
+    return action_items
+
+def map_action_items_to_files(action_items, document_titles, document_urls):
+    for item in action_items.keys():
+        closest_match = difflib.get_close_matches(item, document_titles, n=1, cutoff=0.5)
+        if closest_match:
+            action_items[item] = document_urls[closest_match[0]]
 
 def extract_text_from_docx(docx_path):
     doc = Document(docx_path)
@@ -113,12 +117,13 @@ if st.button("Go to next stage"):
         st.session_state.current_stage_index = 0
 
 current_stage = current_stage_keys[st.session_state.current_stage_index]
-st.subheader(current_stage)
 current_stage_content = stages_content[current_stage]
+st.subheader(current_stage)
 st.write(current_stage_content)
 
-relevant_documents = find_relevant_documents_for_stage(current_stage_content, document_titles, document_urls)
-for title, url in relevant_documents.items():
+action_items = find_action_items_in_stage(current_stage_content)
+map_action_items_to_files(action_items, document_titles, document_urls)
+for title, url in action_items.items():
     st.markdown(f"- [{title}]({url})")
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx', 'pptx', 'pdf'])
