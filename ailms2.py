@@ -4,6 +4,9 @@ import os
 from github import Github
 import openai
 import difflib
+import openpyxl
+from docx import Document
+import fitz
 
 st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
 
@@ -20,7 +23,7 @@ repo = g.get_repo("scooter7/aitrain")
 def upload_to_github(file_path, repo, path_in_repo):
     with open(file_path, "rb") as file:
         content = file.read()
-    git_file = os.path.join(path_in_repo, os.path.basename(file_path))
+    git_file = path_in_repo + '/' + os.path.basename(file_path)
     try:
         contents = repo.get_contents(git_file)
         repo.update_file(contents.path, "Updating file", content, contents.sha)
@@ -30,13 +33,9 @@ def upload_to_github(file_path, repo, path_in_repo):
         st.success('File created on GitHub')
 
 def save_uploaded_file(uploaded_file):
-    temp_dir = "tempDir"
-    if not os.path.exists(temp_dir):
-        os.makedirs(temp_dir)
-    file_path = os.path.join(temp_dir, uploaded_file.name)
-    with open(file_path, "wb") as f:
+    with open(os.path.join("tempDir", uploaded_file.name), "wb") as f:
         f.write(uploaded_file.getbuffer())
-    return file_path
+    return os.path.join("tempDir", uploaded_file.name)
 
 def get_document_titles_and_urls(repo):
     contents = repo.get_contents("docs")
@@ -69,6 +68,26 @@ def extract_text_by_stages(pptx_path):
         stages_content[stage] = "\n".join(text_content)
     return stages_content
 
+def extract_text_from_docx(docx_path):
+    doc = Document(docx_path)
+    return "\n".join([paragraph.text for paragraph in doc.paragraphs])
+
+def extract_text_from_pdf(pdf_path):
+    with fitz.open(pdf_path) as doc:
+        text = ""
+        for page in doc:
+            text += page.get_text()
+    return text
+
+def extract_data_from_xlsx(xlsx_path):
+    workbook = openpyxl.load_workbook(xlsx_path)
+    text = ""
+    for sheet in workbook.sheetnames:
+        worksheet = workbook[sheet]
+        for row in worksheet.iter_rows(values_only=True):
+            text += " ".join([str(cell) if cell is not None else "" for cell in row]) + "\n"
+    return text
+
 document_titles, document_urls = get_document_titles_and_urls(repo)
 
 stages_content = extract_text_by_stages("docs/marketing_strategy_plan_methodology.pptx")
@@ -87,10 +106,18 @@ current_stage = current_stage_keys[st.session_state.current_stage_index]
 st.subheader(current_stage)
 st.write(stages_content[current_stage])
 
-uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
+uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx', 'pptx', 'pdf'])
 if uploaded_file is not None:
     file_path = save_uploaded_file(uploaded_file)
     upload_to_github(file_path, repo, "uploads")
+    file_content = ""
+    if uploaded_file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        file_content = extract_text_from_docx(file_path)
+    elif uploaded_file.type == "application/pdf":
+        file_content = extract_text_from_pdf(file_path)
+    elif uploaded_file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        file_content = extract_data_from_xlsx(file_path)
+    st.session_state.uploaded_file_content = file_content
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -113,12 +140,13 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
         else:
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
-        formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
+        context = st.session_state.uploaded_file_content[:1000] if 'uploaded_file_content' in st.session_state else ""
         response = openai.chat.completions.create(
             model="gpt-4",
-            messages=formatted_messages
+            messages=[{"role": "system", "content": "You are a helpful assistant."}] + st.session_state.messages,
+            session_id=st.session_state.session_id if 'session_id' in st.session_state else None
         )
-        response_content = response.choices[0].message.content
-
-    st.session_state.messages.append({"role": "assistant", "content": response_content})
-    st.write(f"Assistant: {response_content}")
+        st.session_state.session_id = response['session_id']
+        response_content = response['choices'][0]['message']['content']
+        st.session_state.messages.append({"role": "assistant", "content": response_content})
+        st.write(f"Assistant: {response_content}")
