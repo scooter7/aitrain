@@ -38,15 +38,22 @@ def save_uploaded_file(uploaded_file):
         f.write(uploaded_file.getbuffer())
     return file_path
 
-def get_document_titles_and_urls(repo):
+def get_document_titles_and_github_urls(repo):
     contents = repo.get_contents("docs")
     document_titles = []
     document_urls = {}
     for content_file in contents:
         if content_file.type == "file" and content_file.name.endswith(('.pdf', '.docx', '.xlsx', '.pptx')):
             document_titles.append(content_file.name)
-            document_urls[content_file.name] = content_file.download_url
+            document_urls[content_file.name] = f"https://github.com/{repo.full_name}/blob/main/docs/{content_file.name}"
     return document_titles, document_urls
+
+document_titles, document_urls = get_document_titles_and_github_urls(repo)
+
+action_items = find_action_items_in_stage(current_stage_content)
+map_action_items_to_files(action_items, document_titles, document_urls)
+for title, url in action_items.items():
+    st.markdown(f"- [{title}]({url})")
 
 def extract_text_by_stages(pptx_path):
     prs = Presentation(pptx_path)
