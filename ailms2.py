@@ -73,16 +73,11 @@ if 'current_stage_index' not in st.session_state:
 current_stage_keys = list(stages_text.keys())
 
 if st.button("Go to next stage"):
-    st.session_state.current_stage_index += 1
-    if st.session_state.current_stage_index >= len(current_stage_keys):
-        st.session_state.current_stage_index = 0  # Reset to the first stage
+    st.session_state.current_stage_index = (st.session_state.current_stage_index + 1) % len(current_stage_keys)
 
-if 0 <= st.session_state.current_stage_index < len(current_stage_keys):
-    current_stage = current_stage_keys[st.session_state.current_stage_index]
-    st.subheader(current_stage)
-    st.write(stages_text[current_stage])
-else:
-    st.error("You've reached the end of the stages or an invalid stage index.")
+current_stage = current_stage_keys[st.session_state.current_stage_index]
+st.subheader(current_stage)
+st.write(stages_text[current_stage])
 
 uploaded_file = st.file_uploader("Upload your document", type=['docx', 'xlsx'])
 if uploaded_file is not None:
@@ -111,11 +106,11 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
-        response = openai.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=formatted_messages
         )
-        response_content = response.choices[0].message['content']
+        response_content = response.choices[0].message.content
 
     st.session_state.messages.append({"role": "assistant", "content": response_content})
     st.write(f"Assistant: {response_content}")
