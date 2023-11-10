@@ -132,9 +132,9 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
     if any(keyword in prompt.lower() for keyword in document_keywords):
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
-        if closest matches:
+        if closest_matches:
             response_content = "Here are the documents that might match your request:\n"
-            for title in closest matches:
+            for title in closest_matches:
                 document_url = document_urls[title]
                 response_content += f"- [{title}]({document_url})\n"
         else:
