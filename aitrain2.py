@@ -60,7 +60,7 @@ def extract_text_by_stages(pptx_path):
     stages_content = {}
     for stage, (start_slide, end_slide) in stages_text.items():
         text_content = []
-        for slide number in range(start_slide - 1, end_slide):
+        for slide_number in range(start_slide - 1, end_slide):
             slide = prs.slides[slide_number]
             for shape in slide.shapes:
                 if hasattr(shape, "text"):
@@ -134,7 +134,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
         if closest_matches:
             response_content = "Here are the documents that might match your request:\n"
-            for title in closest matches:
+            for title in closest_matches:
                 document_url = document_urls[title]
                 response_content += f"- [{title}]({document_url})\n"
         else:
