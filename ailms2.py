@@ -26,8 +26,9 @@ def extract_text_by_stages(pdf_path):
     for page in doc:
         blocks = page.get_text("blocks")
         for block in blocks:
-            if block[0] == fitz.TEXT_BLOCK_TYPE_TEXT:
-                text = block[4].strip()
+            # Check if the block is a text block
+            if block[0] == 0:  # In PyMuPDF, text blocks are of type 0
+                text = block[4].strip()  # The text is at index 4
                 if text.startswith("Stage") and "-" in text:
                     if current_stage:
                         stages_text[current_stage] = "\n".join(current_text)
