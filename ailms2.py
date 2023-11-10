@@ -20,6 +20,35 @@ github_token = st.secrets["GITHUB_TOKEN"]
 g = Github(github_token)
 repo = g.get_repo("scooter7/aitrain")
 
+def find_action_items_in_stage(stage_content):
+    action_items = {}
+    lines = stage_content.split("\n")
+    for line in lines:
+        if "Action Item –" in line:
+            # Extract the action item title
+            action_item_title = line.split("–")[1].strip()
+            action_items[action_item_title] = None
+    return action_items
+
+def map_action_items_to_files(action_items, document_titles, document_urls):
+    for item in action_items.keys():
+        # Use difflib or similar method to find the closest match in document titles
+        closest_match = difflib.get_close_matches(item, document_titles, n=1, cutoff=0.5)
+        if closest_match:
+            action_items[item] = document_urls[closest_match[0]]
+
+# Example usage in your Streamlit app
+current_stage_content = stages_content[current_stage]
+action_items = find_action_items_in_stage(current_stage_content)
+map_action_items_to_files(action_items, document_titles, document_urls)
+
+# Displaying the links
+for item, url in action_items.items():
+    if url:
+        st.markdown(f"[{item}]({url})")
+    else:
+        st.write(f"Action Item: {item} (No link found)")
+
 def upload_to_github(file_path, repo, path_in_repo):
     with open(file_path, "rb") as file:
         content = file.read()
