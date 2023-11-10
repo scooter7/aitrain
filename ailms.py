@@ -4,7 +4,7 @@ import os
 from github import Github
 import openai
 from pypdf import PdfReader
-import difflib  # Import difflib for close matches
+import difflib
 
 # Set up the Streamlit page
 st.set_page_config(page_title="Chat with the Bain Report", page_icon="🦙", layout="centered", initial_sidebar_state="auto", menu_items=None)
@@ -79,24 +79,17 @@ for message in st.session_state.messages:
     st.write(f"{message['role'].title()}: {message['content']}")
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] != "assistant":
-    # Define keywords that suggest the user is asking for a document
     document_keywords = ['document', 'file', 'download', 'link', 'template', 'worksheet', 'form']
-    # Assume document_titles and document_urls are defined somewhere in your code
     document_titles = []  # Populate this list with actual document titles
     document_urls = {}  # Populate this dictionary with {title: url} pairs
 
-    # Check if the user's query contains any of the document keywords
     if any(keyword in prompt.lower() for keyword in document_keywords):
-        # Attempt to find close matches for the document title in the user's query
         closest_matches = difflib.get_close_matches(prompt.lower(), [title.lower() for title in document_titles], n=5, cutoff=0.3)
         if closest_matches:
-            # Find the original title cases from the document titles
             matching_titles = [title for title in document_titles if title.lower() in closest_matches]
             if matching_titles:
-                # Provide links to all matching documents
                 response_content = "Here are the documents that might match your request:\n"
                 for title in matching_titles:
-                    # Ensure the title is linked to the correct URL
                     document_url = document_urls[title]
                     response_content += f"- [{title}]({document_url})\n"
             else:
@@ -104,14 +97,11 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] != "assis
         else:
             response_content = "I couldn't find the document you're looking for. Please make sure to use the exact title of the document or provide more context."
     else:
-        # If no document keywords are present, handle the query normally
-        # Format the messages for the API
         formatted_messages = [{"role": message["role"], "content": message["content"]} for message in st.session_state.messages]
-        # Generate the response using the OpenAI API
-        response = openai.Completion.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=formatted_messages
         )
-        response_content = response.choices[0].message.content
+        response_content = response.choices[0].message['content']
 
     st.session_state.messages.append({"role": "assistant", "content": response_content})
